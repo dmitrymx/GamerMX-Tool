@@ -9,6 +9,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Interop;
+using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Threading;
 
@@ -79,6 +80,19 @@ public partial class MainWindow : Window
         ApplyDataToUi();
         _isLoaded = true;
         UpdateTimerDisplay();
+    }
+
+    private void ChromeContent_SizeChanged(object sender, SizeChangedEventArgs e)
+    {
+        if (e.NewSize.Width <= 0 || e.NewSize.Height <= 0)
+            return;
+
+        var clip = new RectangleGeometry(
+            new Rect(0, 0, e.NewSize.Width, e.NewSize.Height),
+            25,
+            25);
+        clip.Freeze();
+        ChromeContent.Clip = clip;
     }
 
     private void Window_SourceInitialized(object? sender, EventArgs e)

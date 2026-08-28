@@ -9,7 +9,7 @@
     <Grid x:Name="RootGrid" Opacity="1">
         <Border x:Name="WindowChrome" Margin="12" CornerRadius="26" BorderThickness="1"
                 BorderBrush="#33FFFFFF" Background="#F20A0C14">
-            <Grid ClipToBounds="True">
+            <Grid x:Name="ChromeContent" SizeChanged="ChromeContent_SizeChanged">
                 <Grid.Background>
                     <RadialGradientBrush Center=".8,.12" GradientOrigin=".8,.12" RadiusX=".8" RadiusY=".8">
                         <GradientStop Color="#392B145D" Offset="0"/>
@@ -308,7 +308,7 @@
                                         <Button Content="Telegram  @dmitrymx" Style="{StaticResource PrimaryButton}" Click="Telegram_Click"/>
                                         <Button Content="mxmvdev.ru  ↗" Margin="10,0,0,0" Style="{StaticResource GhostButton}" Click="Website_Click"/>
                                     </StackPanel>
-                                    <TextBlock Text="Версия 1.0.1  •  Сделано для Windows" Foreground="#596176" FontSize="10" Margin="0,24,0,0"/>
+                                    <TextBlock Text="Версия 1.0.2  •  Сделано для Windows" Foreground="#596176" FontSize="10" Margin="0,24,0,0"/>
                                 </StackPanel>
                             </Border>
                         </Grid>
