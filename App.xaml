@@ -23,11 +23,6 @@
             <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="CornerRadius" Value="22"/>
             <Setter Property="Padding" Value="22"/>
-            <Setter Property="Effect">
-                <Setter.Value>
-                    <DropShadowEffect BlurRadius="28" ShadowDepth="8" Opacity=".25" Color="#000000"/>
-                </Setter.Value>
-            </Setter>
         </Style>
 
         <Style x:Key="NavButton" TargetType="Button">

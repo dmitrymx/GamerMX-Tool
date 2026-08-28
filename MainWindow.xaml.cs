@@ -24,7 +24,7 @@ public partial class MainWindow : Window
     private const long WsExTransparent = 0x00000020L;
     private const long WsExLayered = 0x00080000L;
 
-    private readonly DispatcherTimer _timer = new(DispatcherPriority.Normal);
+    private readonly DispatcherTimer _timer = new(DispatcherPriority.Background);
     private readonly string _dataPath = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
         "GamerMX Tool", "data.json");
@@ -52,6 +52,8 @@ public partial class MainWindow : Window
     private AppData _data = new();
     private TimeSpan _remaining = TimeSpan.FromMinutes(25);
     private TimeSpan _total = TimeSpan.FromMinutes(25);
+    private DateTime _endAtUtc;
+    private long _lastShownSecond = -1;
     private DateTime _sessionStarted = DateTime.Now;
     private bool _isRunning;
     private bool _isOverlay;
@@ -63,7 +65,9 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
-        _timer.Interval = TimeSpan.FromSeconds(1);
+        // Ten lightweight vector updates per second look continuous for a
+        // countdown arc while keeping layered-window redraws inexpensive.
+        _timer.Interval = TimeSpan.FromMilliseconds(100);
         _timer.Tick += Timer_Tick;
         Loaded += MainWindow_Loaded;
         NotesList.ItemsSource = _data.Notes;
@@ -75,7 +79,6 @@ public partial class MainWindow : Window
         ApplyDataToUi();
         _isLoaded = true;
         UpdateTimerDisplay();
-        AnimateEntrance();
     }
 
     private void Window_SourceInitialized(object? sender, EventArgs e)
@@ -108,20 +111,30 @@ public partial class MainWindow : Window
 
     private void Timer_Tick(object? sender, EventArgs e)
     {
-        if (_remaining > TimeSpan.Zero)
+        _remaining = _endAtUtc - DateTime.UtcNow;
+        if (_remaining <= TimeSpan.Zero)
         {
-            _remaining -= TimeSpan.FromSeconds(1);
+            _remaining = TimeSpan.Zero;
+            UpdateRingProgress();
             UpdateTimerDisplay();
+            CompleteTimer();
             return;
         }
 
-        CompleteTimer();
+        UpdateRingProgress();
+        var shownSecond = (long)Math.Ceiling(_remaining.TotalSeconds);
+        if (shownSecond != _lastShownSecond)
+        {
+            _lastShownSecond = shownSecond;
+            UpdateTimerDisplay();
+        }
     }
 
     private void StartButton_Click(object sender, RoutedEventArgs e)
     {
         if (_isRunning)
         {
+            _remaining = TimeSpan.FromTicks(Math.Max(0, (_endAtUtc - DateTime.UtcNow).Ticks));
             _timer.Stop();
             _isRunning = false;
             StartButton.Content = "Продолжить";
@@ -141,12 +154,13 @@ public partial class MainWindow : Window
             _remaining = _total = interval;
         }
 
+        _endAtUtc = DateTime.UtcNow + _remaining;
+        _lastShownSecond = -1;
         _timer.Start();
         _isRunning = true;
         StartButton.Content = "Пауза";
         StatusBadge.Text = "●  В ФОКУСЕ";
         StatusBadge.Foreground = (System.Windows.Media.Brush)new System.Windows.Media.BrushConverter().ConvertFrom("#5EEAD4")!;
-        BeginPulse();
         UpdateTimerDisplay();
     }
 
@@ -161,7 +175,7 @@ public partial class MainWindow : Window
         TimerLabel.Text = "СЛЕДУЮЩАЯ ПАУЗА";
         StatusBadge.Text = "●  ГОТОВ";
         StatusBadge.Foreground = (System.Windows.Media.Brush)new System.Windows.Media.BrushConverter().ConvertFrom("#5EEAD4")!;
-        PulseRing.BeginAnimation(OpacityProperty, null);
+        _lastShownSecond = -1;
         UpdateTimerDisplay();
     }
 
@@ -178,6 +192,7 @@ public partial class MainWindow : Window
         _isRunning = false;
         _remaining = _total = interval;
         StartButton.Content = "Старт";
+        _lastShownSecond = -1;
         UpdateTimerDisplay();
     }
 
@@ -224,27 +239,25 @@ public partial class MainWindow : Window
 
     private void UpdateTimerDisplay()
     {
-        var totalHours = (int)_remaining.TotalHours;
+        var visibleTime = TimeSpan.FromSeconds(Math.Max(0, Math.Ceiling(_remaining.TotalSeconds)));
+        var totalHours = (int)visibleTime.TotalHours;
         var display = totalHours > 0
-            ? $"{totalHours:00}:{_remaining.Minutes:00}:{_remaining.Seconds:00}"
-            : $"{_remaining.Minutes:00}:{_remaining.Seconds:00}";
+            ? $"{totalHours:00}:{visibleTime.Minutes:00}:{visibleTime.Seconds:00}"
+            : $"{visibleTime.Minutes:00}:{visibleTime.Seconds:00}";
         TimerText.Text = display;
         OverlayTimerText.Text = display;
         TimerProgress.Value = _total.TotalSeconds <= 0
             ? 0
             : Math.Clamp((1 - _remaining.TotalSeconds / _total.TotalSeconds) * 100, 0, 100);
+        UpdateRingProgress();
         FocusTimeText.Text = $"{Math.Max(0, (int)(DateTime.Now - _sessionStarted).TotalMinutes)} мин";
     }
 
-    private void BeginPulse()
+    private void UpdateRingProgress()
     {
-        var animation = new DoubleAnimation(.25, .72, TimeSpan.FromSeconds(1.8))
-        {
-            AutoReverse = true,
-            RepeatBehavior = RepeatBehavior.Forever,
-            EasingFunction = new SineEase { EasingMode = EasingMode.EaseInOut }
-        };
-        PulseRing.BeginAnimation(OpacityProperty, animation);
+        CountdownRing.Progress = _total.TotalSeconds <= 0
+            ? 0
+            : Math.Clamp(_remaining.TotalSeconds / _total.TotalSeconds, 0, 1);
     }
 
     private void FlashOverlay()
@@ -255,16 +268,6 @@ public partial class MainWindow : Window
             RepeatBehavior = new RepeatBehavior(3)
         };
         CompactOverlay.BeginAnimation(OpacityProperty, animation);
-    }
-
-    private void AnimateEntrance()
-    {
-        var fade = new DoubleAnimation(0, RootGrid.Opacity, TimeSpan.FromMilliseconds(240))
-        {
-            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut },
-            FillBehavior = FillBehavior.Stop
-        };
-        RootGrid.BeginAnimation(OpacityProperty, fade);
     }
 
     private void OverlayButton_Click(object sender, RoutedEventArgs e) => ToggleOverlay();

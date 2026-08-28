@@ -1,6 +1,7 @@
 ﻿<Window x:Class="GamerMX.Tool.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:local="clr-namespace:GamerMX.Tool"
         Title="GamerMX Tool" Height="780" Width="1180" MinHeight="680" MinWidth="1040"
         WindowStyle="None" AllowsTransparency="True" Background="Transparent"
         ResizeMode="CanResizeWithGrip" UseLayoutRounding="True"
@@ -8,9 +9,6 @@
     <Grid x:Name="RootGrid" Opacity="1">
         <Border x:Name="WindowChrome" Margin="12" CornerRadius="26" BorderThickness="1"
                 BorderBrush="#33FFFFFF" Background="#F20A0C14">
-            <Border.Effect>
-                <DropShadowEffect BlurRadius="35" ShadowDepth="8" Opacity=".5" Color="#000000"/>
-            </Border.Effect>
             <Grid ClipToBounds="True">
                 <Grid.Background>
                     <RadialGradientBrush Center=".8,.12" GradientOrigin=".8,.12" RadiusX=".8" RadiusY=".8">
@@ -20,10 +18,9 @@
                     </RadialGradientBrush>
                 </Grid.Background>
 
-                <Ellipse Width="520" Height="520" Fill="#168B5CF6" HorizontalAlignment="Right"
-                         VerticalAlignment="Top" Margin="0,-310,-170,0" IsHitTestVisible="False">
-                    <Ellipse.Effect><BlurEffect Radius="95"/></Ellipse.Effect>
-                </Ellipse>
+                <Ellipse Width="520" Height="520" Fill="#0B8B5CF6" Stroke="#128B5CF6" StrokeThickness="1"
+                         HorizontalAlignment="Right" VerticalAlignment="Top"
+                         Margin="0,-310,-170,0" IsHitTestVisible="False"/>
 
                 <Grid>
                     <Grid.ColumnDefinitions>
@@ -117,14 +114,9 @@
                                 </Grid.ColumnDefinitions>
                                 <Border Style="{StaticResource GlassCard}" Margin="0,0,14,0">
                                     <Grid>
-                                        <Ellipse Width="310" Height="310" Fill="#0BFFFFFF" Stroke="#18FFFFFF" StrokeThickness="1"/>
-                                        <Ellipse x:Name="PulseRing" Width="276" Height="276" Stroke="#338B5CF6" StrokeThickness="15">
-                                            <Ellipse.Effect><BlurEffect Radius="12"/></Ellipse.Effect>
-                                        </Ellipse>
-                                        <Ellipse Width="276" Height="276" Stroke="#6D8B5CF6" StrokeThickness="5"
-                                                 StrokeDashArray="1.5,1.5" RenderTransformOrigin=".5,.5">
-                                            <Ellipse.RenderTransform><RotateTransform Angle="-90"/></Ellipse.RenderTransform>
-                                        </Ellipse>
+                                        <Ellipse Width="310" Height="310" Fill="#08FFFFFF" Stroke="#18FFFFFF" StrokeThickness="1"/>
+                                        <local:TimerRing x:Name="CountdownRing" Width="286" Height="286" Progress="1"
+                                                         IsHitTestVisible="False"/>
                                         <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
                                             <TextBlock x:Name="TimerLabel" Text="С Л Е Д У Ю Щ А Я   П А У З А" FontSize="10"
                                                        Foreground="#7C849D" HorizontalAlignment="Center"/>
@@ -316,7 +308,7 @@
                                         <Button Content="Telegram  @dmitrymx" Style="{StaticResource PrimaryButton}" Click="Telegram_Click"/>
                                         <Button Content="mxmvdev.ru  ↗" Margin="10,0,0,0" Style="{StaticResource GhostButton}" Click="Website_Click"/>
                                     </StackPanel>
-                                    <TextBlock Text="Версия 1.0.0  •  Сделано для Windows" Foreground="#596176" FontSize="10" Margin="0,24,0,0"/>
+                                    <TextBlock Text="Версия 1.0.1  •  Сделано для Windows" Foreground="#596176" FontSize="10" Margin="0,24,0,0"/>
                                 </StackPanel>
                             </Border>
                         </Grid>
@@ -329,7 +321,6 @@
         <Border x:Name="CompactOverlay" Visibility="Collapsed" Width="390" Height="138" CornerRadius="24"
                 Background="#E90C0F1A" BorderBrush="#4D8B5CF6" BorderThickness="1.2"
                 HorizontalAlignment="Center" VerticalAlignment="Center" MouseLeftButtonDown="TitleBar_MouseLeftButtonDown">
-            <Border.Effect><DropShadowEffect BlurRadius="32" ShadowDepth="6" Opacity=".55"/></Border.Effect>
             <Grid Margin="18">
                 <Grid.ColumnDefinitions><ColumnDefinition Width="86"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
                 <Border Width="72" Height="72" CornerRadius="36" Background="#208B5CF6" VerticalAlignment="Center">
