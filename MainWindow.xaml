@@ -263,7 +263,9 @@
                                         <StackPanel>
                                             <TextBlock Text="Окно и оверлей" FontSize="16" FontWeight="SemiBold"/>
                                             <CheckBox x:Name="TopmostCheck" Content="Всегда поверх остальных окон" Margin="0,18,0,0" IsChecked="True" Checked="TopmostCheck_Changed" Unchecked="TopmostCheck_Changed"/>
-                                            <CheckBox x:Name="ClickThroughCheck" Content="Пропускать клики сквозь оверлей" Margin="0,14,0,0" Checked="ClickThroughCheck_Changed" Unchecked="ClickThroughCheck_Changed"/>
+                                            <CheckBox x:Name="ClickThroughCheck" Content="Пропускать клики только в режиме оверлея" Margin="0,14,0,0" Checked="ClickThroughCheck_Changed" Unchecked="ClickThroughCheck_Changed"/>
+                                            <TextBlock Text="Основное окно останется интерактивным. Ctrl + Shift + G всегда вернёт клики и выйдет из оверлея."
+                                                       Margin="24,6,0,0" Foreground="#6F7890" FontSize="11" TextWrapping="Wrap"/>
                                             <TextBlock Text="Прозрачность всего приложения" Margin="0,20,0,7" Foreground="#A8AFC1"/>
                                             <Slider x:Name="OpacitySlider" Minimum="25" Maximum="100" Value="96" TickFrequency="5"
                                                     ValueChanged="OpacitySlider_ValueChanged"/>
@@ -272,6 +274,40 @@
                                                 <TextBlock x:Name="OpacityValueText" Text="96%" HorizontalAlignment="Center" Foreground="#A78BFA" FontSize="10"/>
                                                 <TextBlock Text="100%" HorizontalAlignment="Right" Foreground="#656D83" FontSize="10"/>
                                             </Grid>
+                                            <Border Height="1" Background="#18FFFFFF" Margin="0,22,0,18"/>
+                                            <Grid>
+                                                <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="18"/><ColumnDefinition/></Grid.ColumnDefinitions>
+                                                <StackPanel>
+                                                    <TextBlock Text="Размер сцены" Margin="0,0,0,7" Foreground="#A8AFC1"/>
+                                                    <ComboBox x:Name="OverlaySizeCombo" SelectionChanged="OverlaySettings_Changed">
+                                                        <ComboBoxItem Content="Компактный" Tag="Compact"/>
+                                                        <ComboBoxItem Content="Средний" Tag="Medium"/>
+                                                        <ComboBoxItem Content="Большой HUD" Tag="Large"/>
+                                                        <ComboBoxItem Content="На весь экран" Tag="Fullscreen"/>
+                                                    </ComboBox>
+                                                </StackPanel>
+                                                <StackPanel Grid.Column="2">
+                                                    <TextBlock Text="Живая анимация" Margin="0,0,0,7" Foreground="#A8AFC1"/>
+                                                    <ComboBox x:Name="OverlayAnimationCombo" SelectionChanged="OverlaySettings_Changed">
+                                                        <ComboBoxItem Content="Аврора" Tag="Aurora"/>
+                                                        <ComboBoxItem Content="Орбиты" Tag="Orbits"/>
+                                                        <ComboBoxItem Content="Радар" Tag="Radar"/>
+                                                        <ComboBoxItem Content="Импульс" Tag="Pulse"/>
+                                                        <ComboBoxItem Content="Звёздная пыль" Tag="Stardust"/>
+                                                        <ComboBoxItem Content="Спокойный" Tag="Calm"/>
+                                                    </ComboBox>
+                                                </StackPanel>
+                                            </Grid>
+                                            <TextBlock Text="Масштаб сцены" Margin="0,18,0,7" Foreground="#A8AFC1"/>
+                                            <Slider x:Name="OverlayScaleSlider" Minimum="70" Maximum="180" Value="100" TickFrequency="10"
+                                                    ValueChanged="OverlayScaleSlider_ValueChanged"/>
+                                            <Grid Margin="0,4,0,0">
+                                                <TextBlock Text="70%" Foreground="#656D83" FontSize="10"/>
+                                                <TextBlock x:Name="OverlayScaleValueText" Text="100%" HorizontalAlignment="Center" Foreground="#5EEAD4" FontSize="10"/>
+                                                <TextBlock Text="180%" HorizontalAlignment="Right" Foreground="#656D83" FontSize="10"/>
+                                            </Grid>
+                                            <Button x:Name="PreviewOverlayButton" Content="▶  Предпросмотр оверлея" Margin="0,16,0,0"
+                                                    Style="{StaticResource PrimaryButton}" Click="PreviewOverlay_Click"/>
                                         </StackPanel>
                                     </Border>
                                     <Border Style="{StaticResource GlassCard}">
@@ -308,7 +344,7 @@
                                         <Button Content="Telegram  @dmitrymx" Style="{StaticResource PrimaryButton}" Click="Telegram_Click"/>
                                         <Button Content="mxmvdev.ru  ↗" Margin="10,0,0,0" Style="{StaticResource GhostButton}" Click="Website_Click"/>
                                     </StackPanel>
-                                    <TextBlock Text="Версия 1.0.2  •  Сделано для Windows" Foreground="#596176" FontSize="10" Margin="0,24,0,0"/>
+                                    <TextBlock Text="Версия 1.1.0  •  Сделано для Windows" Foreground="#596176" FontSize="10" Margin="0,24,0,0"/>
                                 </StackPanel>
                             </Border>
                         </Grid>
@@ -317,24 +353,36 @@
             </Grid>
         </Border>
 
-        <!-- Compact overlay -->
-        <Border x:Name="CompactOverlay" Visibility="Collapsed" Width="390" Height="138" CornerRadius="24"
+        <!-- Scalable live overlay -->
+        <Border x:Name="CompactOverlay" Visibility="Collapsed" Margin="10" CornerRadius="24"
                 Background="#E90C0F1A" BorderBrush="#4D8B5CF6" BorderThickness="1.2"
-                HorizontalAlignment="Center" VerticalAlignment="Center" MouseLeftButtonDown="TitleBar_MouseLeftButtonDown">
-            <Grid Margin="18">
-                <Grid.ColumnDefinitions><ColumnDefinition Width="86"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-                <Border Width="72" Height="72" CornerRadius="36" Background="#208B5CF6" VerticalAlignment="Center">
-                    <TextBlock Text="◷" FontSize="30" Foreground="#C4B5FD" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                </Border>
-                <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="4,0,12,0">
-                    <TextBlock Text="Д О   П А У З Ы" FontSize="9" Foreground="#777F97"/>
-                    <TextBlock x:Name="OverlayTimerText" Text="25:00" FontSize="32" FontWeight="Light"/>
-                    <TextBlock x:Name="OverlayExerciseText" Text="Разминка всего тела" FontSize="11" Foreground="#A2AABD"/>
-                </StackPanel>
-                <StackPanel Grid.Column="2" VerticalAlignment="Center">
-                    <Button Content="↗" Width="42" Height="38" Padding="0" Style="{StaticResource GhostButton}" Click="OverlayButton_Click"/>
-                    <Button Content="×" Width="42" Height="38" Padding="0" Margin="0,7,0,0" Style="{StaticResource GhostButton}" Click="Close_Click"/>
-                </StackPanel>
+                MouseLeftButtonDown="TitleBar_MouseLeftButtonDown">
+            <Grid x:Name="OverlayScene" SizeChanged="OverlayScene_SizeChanged">
+                <local:OverlayMotionSurface x:Name="OverlayMotionLayer"/>
+                <Grid Margin="18">
+                    <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="50"/></Grid.ColumnDefinitions>
+                    <Viewbox Grid.Column="0" Stretch="Uniform">
+                        <Grid Width="320" Height="104">
+                            <Grid.ColumnDefinitions><ColumnDefinition Width="100"/><ColumnDefinition/></Grid.ColumnDefinitions>
+                            <Grid Width="86" Height="86" VerticalAlignment="Center">
+                                <local:TimerRing x:Name="OverlayRing" Progress="1"/>
+                                <TextBlock Text="GX" FontSize="15" FontWeight="Bold" Foreground="#C4B5FD"
+                                           HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Grid>
+                            <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="5,0,0,0">
+                                <TextBlock Text="Д О   П А У З Ы" FontSize="9" Foreground="#8891AA"/>
+                                <TextBlock x:Name="OverlayTimerText" Text="25:00" FontSize="36" FontWeight="Light"/>
+                                <TextBlock x:Name="OverlayExerciseText" Text="Разминка всего тела" FontSize="11" Foreground="#B2BACD"/>
+                                <TextBlock Text="Ctrl + Shift + G  —  вернуть клики и выйти" Margin="0,5,0,0"
+                                           FontSize="8" Foreground="#687189"/>
+                            </StackPanel>
+                        </Grid>
+                    </Viewbox>
+                    <StackPanel Grid.Column="1" VerticalAlignment="Top" HorizontalAlignment="Right">
+                        <Button Content="↗" Width="42" Height="38" Padding="0" Style="{StaticResource GhostButton}" Click="OverlayButton_Click"/>
+                        <Button Content="×" Width="42" Height="38" Padding="0" Margin="0,7,0,0" Style="{StaticResource GhostButton}" Click="Close_Click"/>
+                    </StackPanel>
+                </Grid>
             </Grid>
         </Border>
     </Grid>

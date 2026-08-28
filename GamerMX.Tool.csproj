@@ -16,7 +16,7 @@
     <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
     <DebugType>embedded</DebugType>
     <PublishTrimmed>false</PublishTrimmed>
-    <Version>1.0.2</Version>
+    <Version>1.1.0</Version>
     <Authors>Максимов Д.А.</Authors>
     <Product>GamerMX Tool</Product>
     <Description>Таймер здоровья, заметки и оверлей для геймеров и разработчиков.</Description>

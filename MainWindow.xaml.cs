@@ -58,6 +58,7 @@ public partial class MainWindow : Window
     private DateTime _sessionStarted = DateTime.Now;
     private bool _isRunning;
     private bool _isOverlay;
+    private bool _isClickThroughActive;
     private bool _isLoaded;
     private bool _allowClose;
     private IntPtr _hwnd;
@@ -95,6 +96,20 @@ public partial class MainWindow : Window
         ChromeContent.Clip = clip;
     }
 
+    private void OverlayScene_SizeChanged(object sender, SizeChangedEventArgs e)
+    {
+        if (e.NewSize.Width <= 0 || e.NewSize.Height <= 0)
+            return;
+
+        var radius = CompactOverlay.CornerRadius.TopLeft;
+        var clip = new RectangleGeometry(
+            new Rect(0, 0, e.NewSize.Width, e.NewSize.Height),
+            radius,
+            radius);
+        clip.Freeze();
+        OverlayScene.Clip = clip;
+    }
+
     private void Window_SourceInitialized(object? sender, EventArgs e)
     {
         _hwnd = new WindowInteropHelper(this).Handle;
@@ -109,15 +124,9 @@ public partial class MainWindow : Window
         const int WmHotkey = 0x0312;
         if (msg == WmHotkey && wParam.ToInt32() == HotkeyId)
         {
-            if (ClickThroughCheck.IsChecked == true)
-            {
-                ClickThroughCheck.IsChecked = false;
-                SetClickThrough(false);
-            }
-            else
-            {
-                ToggleOverlay();
-            }
+            // This shortcut is also the guaranteed escape route from a
+            // click-through overlay.
+            ToggleOverlay();
             handled = true;
         }
         return IntPtr.Zero;
@@ -269,9 +278,11 @@ public partial class MainWindow : Window
 
     private void UpdateRingProgress()
     {
-        CountdownRing.Progress = _total.TotalSeconds <= 0
+        var progress = _total.TotalSeconds <= 0
             ? 0
             : Math.Clamp(_remaining.TotalSeconds / _total.TotalSeconds, 0, 1);
+        CountdownRing.Progress = progress;
+        OverlayRing.Progress = progress;
     }
 
     private void FlashOverlay()
@@ -294,18 +305,27 @@ public partial class MainWindow : Window
             _isOverlay = true;
             WindowChrome.Visibility = Visibility.Collapsed;
             CompactOverlay.Visibility = Visibility.Visible;
-            Width = 420;
-            Height = 170;
             MinWidth = 0;
             MinHeight = 0;
             ResizeMode = ResizeMode.NoResize;
             Topmost = true;
-            Left = SystemParameters.WorkArea.Right - Width - 28;
-            Top = SystemParameters.WorkArea.Top + 28;
+            ApplyOverlayLayout();
+            ApplyOverlayAnimation();
+            if (ClickThroughCheck.IsChecked == true)
+            {
+                SetClickThrough(true);
+                _isClickThroughActive = true;
+            }
             OverlayButton.Content = "Развернуть";
         }
         else
         {
+            if (_isClickThroughActive)
+            {
+                SetClickThrough(false);
+                _isClickThroughActive = false;
+            }
+            OverlayMotionLayer.Stop();
             _isOverlay = false;
             CompactOverlay.Visibility = Visibility.Collapsed;
             WindowChrome.Visibility = Visibility.Visible;
@@ -319,6 +339,102 @@ public partial class MainWindow : Window
             Topmost = TopmostCheck.IsChecked == true;
             OverlayButton.Content = "Включить";
         }
+    }
+
+    private void ApplyOverlayLayout()
+    {
+        var sizeMode = GetSelectedTag(OverlaySizeCombo, "Compact");
+        var scale = Math.Clamp(OverlayScaleSlider.Value / 100d, .7, 1.8);
+        var monitor = GetCurrentMonitorBounds(sizeMode == "Fullscreen");
+
+        var baseSize = sizeMode switch
+        {
+            "Medium" => new Size(720, 300),
+            "Large" => new Size(1100, 520),
+            "Fullscreen" => new Size(monitor.Width, monitor.Height),
+            _ => new Size(430, 180)
+        };
+
+        Width = sizeMode == "Fullscreen"
+            ? monitor.Width
+            : Math.Min(baseSize.Width * scale, monitor.Width - 24);
+        Height = sizeMode == "Fullscreen"
+            ? monitor.Height
+            : Math.Min(baseSize.Height * scale, monitor.Height - 24);
+
+        if (sizeMode == "Fullscreen")
+        {
+            Left = monitor.Left;
+            Top = monitor.Top;
+            CompactOverlay.Margin = new Thickness(0);
+            CompactOverlay.CornerRadius = new CornerRadius(0);
+        }
+        else
+        {
+            Left = monitor.Right - Width - 18;
+            Top = monitor.Top + 18;
+            CompactOverlay.Margin = new Thickness(10);
+            CompactOverlay.CornerRadius = new CornerRadius(sizeMode == "Compact" ? 24 : 30);
+        }
+    }
+
+    private void ApplyOverlayAnimation()
+    {
+        var modeName = GetSelectedTag(OverlayAnimationCombo, "Aurora");
+        if (!Enum.TryParse<OverlayAnimationMode>(modeName, out var mode))
+            mode = OverlayAnimationMode.Aurora;
+        OverlayMotionLayer.Stop();
+        OverlayMotionLayer.Mode = mode;
+        OverlayMotionLayer.Start();
+    }
+
+    private Rect GetCurrentMonitorBounds(bool fullMonitor)
+    {
+        var monitor = MonitorFromWindow(_hwnd, 2);
+        var info = new MonitorInfo { Size = Marshal.SizeOf<MonitorInfo>() };
+        if (monitor != IntPtr.Zero && GetMonitorInfo(monitor, ref info))
+        {
+            var rect = fullMonitor ? info.Monitor : info.WorkArea;
+            return new Rect(rect.Left, rect.Top, rect.Right - rect.Left, rect.Bottom - rect.Top);
+        }
+        return fullMonitor
+            ? new Rect(SystemParameters.VirtualScreenLeft, SystemParameters.VirtualScreenTop,
+                SystemParameters.VirtualScreenWidth, SystemParameters.VirtualScreenHeight)
+            : SystemParameters.WorkArea;
+    }
+
+    private void PreviewOverlay_Click(object sender, RoutedEventArgs e)
+    {
+        if (_isOverlay)
+        {
+            ApplyOverlayLayout();
+            ApplyOverlayAnimation();
+            return;
+        }
+        ToggleOverlay();
+    }
+
+    private void OverlaySettings_Changed(object sender, SelectionChangedEventArgs e)
+    {
+        if (!_isLoaded)
+            return;
+        if (_isOverlay)
+        {
+            ApplyOverlayLayout();
+            ApplyOverlayAnimation();
+        }
+        SaveData();
+    }
+
+    private void OverlayScaleSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+    {
+        if (OverlayScaleValueText is not null)
+            OverlayScaleValueText.Text = $"{e.NewValue:0}%";
+        if (!_isLoaded)
+            return;
+        if (_isOverlay)
+            ApplyOverlayLayout();
+        SaveData();
     }
 
     private void OpacitySlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
@@ -345,7 +461,13 @@ public partial class MainWindow : Window
     {
         if (_isLoaded)
         {
-            SetClickThrough(ClickThroughCheck.IsChecked == true);
+            // Never make the settings window click-through. The preference is
+            // applied only after switching into overlay mode.
+            if (_isOverlay)
+            {
+                _isClickThroughActive = ClickThroughCheck.IsChecked == true;
+                SetClickThrough(_isClickThroughActive);
+            }
             SaveData();
         }
     }
@@ -519,12 +641,32 @@ public partial class MainWindow : Window
     {
         OpacitySlider.Value = Math.Clamp(_data.OpacityPercent, 25, 100);
         TopmostCheck.IsChecked = _data.AlwaysOnTop;
+        ClickThroughCheck.IsChecked = _data.OverlayClickThrough;
         SoundCheck.IsChecked = _data.SoundEnabled;
         BreakOverlayCheck.IsChecked = _data.BreakOverlay;
         AutoStartCheck.IsChecked = _data.AutoStart;
+        SelectComboByTag(OverlaySizeCombo, _data.OverlaySize);
+        SelectComboByTag(OverlayAnimationCombo, _data.OverlayAnimation);
+        OverlayScaleSlider.Value = Math.Clamp(_data.OverlayScalePercent, 70, 180);
         Topmost = _data.AlwaysOnTop;
         RefreshNotesCount();
         RefreshStats();
+    }
+
+    private static string GetSelectedTag(ComboBox comboBox, string fallback) =>
+        comboBox.SelectedItem is ComboBoxItem { Tag: string tag } ? tag : fallback;
+
+    private static void SelectComboByTag(ComboBox comboBox, string tag)
+    {
+        foreach (var item in comboBox.Items.OfType<ComboBoxItem>())
+        {
+            if (string.Equals(item.Tag?.ToString(), tag, StringComparison.OrdinalIgnoreCase))
+            {
+                comboBox.SelectedItem = item;
+                return;
+            }
+        }
+        comboBox.SelectedIndex = 0;
     }
 
     private void SaveData()
@@ -535,9 +677,13 @@ public partial class MainWindow : Window
         {
             _data.OpacityPercent = OpacitySlider.Value;
             _data.AlwaysOnTop = TopmostCheck.IsChecked == true;
+            _data.OverlayClickThrough = ClickThroughCheck.IsChecked == true;
             _data.SoundEnabled = SoundCheck.IsChecked == true;
             _data.BreakOverlay = BreakOverlayCheck.IsChecked == true;
             _data.AutoStart = AutoStartCheck.IsChecked == true;
+            _data.OverlaySize = GetSelectedTag(OverlaySizeCombo, "Compact");
+            _data.OverlayAnimation = GetSelectedTag(OverlayAnimationCombo, "Aurora");
+            _data.OverlayScalePercent = OverlayScaleSlider.Value;
             Directory.CreateDirectory(Path.GetDirectoryName(_dataPath)!);
             File.WriteAllText(_dataPath, JsonSerializer.Serialize(_data,
                 new JsonSerializerOptions { WriteIndented = true }));
@@ -622,6 +768,12 @@ public partial class MainWindow : Window
     [DllImport("user32.dll")]
     private static extern bool UnregisterHotKey(IntPtr hWnd, int id);
 
+    [DllImport("user32.dll")]
+    private static extern IntPtr MonitorFromWindow(IntPtr hwnd, uint flags);
+
+    [DllImport("user32.dll", CharSet = CharSet.Auto)]
+    private static extern bool GetMonitorInfo(IntPtr monitor, ref MonitorInfo monitorInfo);
+
     [DllImport("user32.dll", EntryPoint = "GetWindowLongPtr")]
     private static extern IntPtr GetWindowLongPtr64(IntPtr hWnd, int nIndex);
 
@@ -639,6 +791,24 @@ public partial class MainWindow : Window
 
     private static IntPtr SetWindowLongPtr(IntPtr hWnd, int nIndex, IntPtr value) =>
         IntPtr.Size == 8 ? SetWindowLongPtr64(hWnd, nIndex, value) : SetWindowLongPtr32(hWnd, nIndex, value);
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct NativeRect
+    {
+        public int Left;
+        public int Top;
+        public int Right;
+        public int Bottom;
+    }
+
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto)]
+    private struct MonitorInfo
+    {
+        public int Size;
+        public NativeRect Monitor;
+        public NativeRect WorkArea;
+        public uint Flags;
+    }
 }
 
 public sealed class AppData
@@ -651,6 +821,10 @@ public sealed class AppData
     public DateTime LastUsedDate { get; set; } = DateTime.Today;
     public double OpacityPercent { get; set; } = 96;
     public bool AlwaysOnTop { get; set; } = true;
+    public bool OverlayClickThrough { get; set; }
+    public string OverlaySize { get; set; } = "Compact";
+    public string OverlayAnimation { get; set; } = "Aurora";
+    public double OverlayScalePercent { get; set; } = 100;
     public bool SoundEnabled { get; set; } = true;
     public bool BreakOverlay { get; set; } = true;
     public bool AutoStart { get; set; }
