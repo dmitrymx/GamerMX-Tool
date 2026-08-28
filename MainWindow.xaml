@@ -67,19 +67,19 @@
                             <StackPanel>
                                 <TextBlock Text="РАБОЧАЯ ЗОНА" Margin="14,0,0,9" FontSize="9"
                                            Foreground="#626A82" FontWeight="SemiBold"/>
-                                <Button x:Name="TimerNav" Tag="Active" Content="◷   Таймер" Style="{StaticResource NavButton}" Click="TimerNav_Click"/>
+                                <Button x:Name="TimerNav" AutomationProperties.AutomationId="TimerNav" Tag="Active" Content="◷   Таймер" Style="{StaticResource NavButton}" Click="TimerNav_Click"/>
                                 <Button x:Name="NotesNav" Content="✎   Заметки" Style="{StaticResource NavButton}" Click="NotesNav_Click"/>
                                 <Button x:Name="StatsNav" Content="▥   Статистика" Style="{StaticResource NavButton}" Click="StatsNav_Click"/>
                                 <TextBlock Text="СИСТЕМА" Margin="14,22,0,9" FontSize="9"
                                            Foreground="#626A82" FontWeight="SemiBold"/>
-                                <Button x:Name="SettingsNav" Content="⚙   Настройки" Style="{StaticResource NavButton}" Click="SettingsNav_Click"/>
+                                <Button x:Name="SettingsNav" AutomationProperties.AutomationId="SettingsNav" Content="⚙   Настройки" Style="{StaticResource NavButton}" Click="SettingsNav_Click"/>
                                 <Button x:Name="AboutNav" Content="◉   О разработчике" Style="{StaticResource NavButton}" Click="AboutNav_Click"/>
                             </StackPanel>
                             <Border Grid.Row="2" Background="#158B5CF6" CornerRadius="16" Padding="14">
                                 <StackPanel>
                                     <TextBlock Text="Быстрый оверлей" FontSize="12" FontWeight="SemiBold"/>
                                     <TextBlock Text="Ctrl + Shift + G" Margin="0,4,0,10" FontSize="11" Foreground="#A78BFA"/>
-                                    <Button x:Name="OverlayButton" Content="Включить" Height="36"
+                                    <Button x:Name="OverlayButton" AutomationProperties.AutomationId="OverlayButton" Content="Включить" Height="36"
                                             Style="{StaticResource GhostButton}" Click="OverlayButton_Click"/>
                                 </StackPanel>
                             </Border>
@@ -144,7 +144,7 @@
                                                 <TextBox x:Name="SecondsBox" Text="0" Width="72" TextAlignment="Center" MaxLength="2"/>
                                             </StackPanel>
                                             <StackPanel Orientation="Horizontal" Margin="0,16,0,0">
-                                                <Button x:Name="StartButton" Content="Старт" Style="{StaticResource PrimaryButton}"
+                                                <Button x:Name="StartButton" AutomationProperties.AutomationId="StartButton" Content="Старт" Style="{StaticResource PrimaryButton}"
                                                         Width="130" Click="StartButton_Click"/>
                                                 <Button x:Name="ResetButton" Content="Сброс" Style="{StaticResource GhostButton}"
                                                         Width="100" Margin="10,0,0,0" Click="ResetButton_Click"/>
@@ -298,6 +298,18 @@
                                                     </ComboBox>
                                                 </StackPanel>
                                             </Grid>
+                                            <TextBlock Text="Анимация самого таймера" Margin="0,18,0,7" Foreground="#A8AFC1"/>
+                                            <ComboBox x:Name="TimerFaceCombo" AutomationProperties.AutomationId="TimerFaceCombo" SelectionChanged="TimerFaceCombo_Changed">
+                                                <ComboBoxItem Content="Neon Arc — живой градиент" Tag="NeonArc"/>
+                                                <ComboBoxItem Content="Segmented Halo — 48 сегментов" Tag="SegmentedHalo"/>
+                                                <ComboBoxItem Content="Dual Orbit — двойная орбита" Tag="DualOrbit"/>
+                                                <ComboBoxItem Content="Reactor — многослойное ядро" Tag="Reactor"/>
+                                                <ComboBoxItem Content="Chrono Dots — 60 световых точек" Tag="ChronoDots"/>
+                                                <ComboBoxItem Content="Sweep — энергетический хвост" Tag="Sweep"/>
+                                                <ComboBoxItem Content="Pulse Core — пульсирующее ядро" Tag="PulseCore"/>
+                                                <ComboBoxItem Content="Hex Core — шестиугольный HUD" Tag="HexCore"/>
+                                                <ComboBoxItem Content="Minimal — тонкая линия" Tag="Minimal"/>
+                                            </ComboBox>
                                             <TextBlock Text="Масштаб сцены" Margin="0,18,0,7" Foreground="#A8AFC1"/>
                                             <Slider x:Name="OverlayScaleSlider" Minimum="70" Maximum="180" Value="100" TickFrequency="10"
                                                     ValueChanged="OverlayScaleSlider_ValueChanged"/>
@@ -306,14 +318,32 @@
                                                 <TextBlock x:Name="OverlayScaleValueText" Text="100%" HorizontalAlignment="Center" Foreground="#5EEAD4" FontSize="10"/>
                                                 <TextBlock Text="180%" HorizontalAlignment="Right" Foreground="#656D83" FontSize="10"/>
                                             </Grid>
-                                            <Button x:Name="PreviewOverlayButton" Content="▶  Предпросмотр оверлея" Margin="0,16,0,0"
+                                            <Button x:Name="PreviewOverlayButton" AutomationProperties.AutomationId="PreviewOverlayButton" Content="▶  Предпросмотр оверлея" Margin="0,16,0,0"
                                                     Style="{StaticResource PrimaryButton}" Click="PreviewOverlay_Click"/>
                                         </StackPanel>
                                     </Border>
                                     <Border Style="{StaticResource GlassCard}">
                                         <StackPanel>
                                             <TextBlock Text="Поведение" FontSize="16" FontWeight="SemiBold"/>
-                                            <CheckBox x:Name="SoundCheck" Content="Приятный звуковой сигнал" Margin="0,18,0,0" IsChecked="True"/>
+                                            <CheckBox x:Name="SoundCheck" Content="Включить звуковой сигнал" Margin="0,18,0,0" IsChecked="True"/>
+                                            <TextBlock Text="Мелодия таймера" Margin="0,18,0,7" Foreground="#A8AFC1"/>
+                                            <Grid>
+                                                <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="10"/><ColumnDefinition Width="130"/></Grid.ColumnDefinitions>
+                                                <ComboBox x:Name="SoundThemeCombo" AutomationProperties.AutomationId="SoundThemeCombo" SelectionChanged="SoundThemeCombo_Changed">
+                                                    <ComboBoxItem Content="Aurora — мягкое восхождение" Tag="Aurora"/>
+                                                    <ComboBoxItem Content="Crystal — хрустальный звон" Tag="Crystal"/>
+                                                    <ComboBoxItem Content="Zen — спокойная чаша" Tag="Zen"/>
+                                                    <ComboBoxItem Content="Soft Arcade — игровой сигнал" Tag="SoftArcade"/>
+                                                    <ComboBoxItem Content="Cosmic — космический подъём" Tag="Cosmic"/>
+                                                    <ComboBoxItem Content="Water Drop — капли воды" Tag="WaterDrop"/>
+                                                    <ComboBoxItem Content="Temple Bell — тёплый колокол" Tag="TempleBell"/>
+                                                    <ComboBoxItem Content="Focus Complete — фокус завершён" Tag="FocusComplete"/>
+                                                    <ComboBoxItem Content="Soft Pulse — мягкий импульс" Tag="SoftPulse"/>
+                                                    <ComboBoxItem Content="Calm Victory — спокойная победа" Tag="CalmVictory"/>
+                                                </ComboBox>
+                                                <Button Grid.Column="2" AutomationProperties.AutomationId="PreviewSoundButton" Content="▶  Слушать" Style="{StaticResource GhostButton}"
+                                                        Click="PreviewSound_Click"/>
+                                            </Grid>
                                             <CheckBox x:Name="AutoStartCheck" Content="Запускать вместе с Windows" Margin="0,14,0,0" Checked="AutoStartCheck_Changed" Unchecked="AutoStartCheck_Changed"/>
                                             <CheckBox x:Name="BreakOverlayCheck" Content="Показывать компактный оверлей во время паузы" Margin="0,14,0,0" IsChecked="True"/>
                                             <TextBlock Text="Горячая клавиша Ctrl + Shift + G возвращает управление, даже когда включён режим «сквозь клики»."
@@ -344,7 +374,7 @@
                                         <Button Content="Telegram  @dmitrymx" Style="{StaticResource PrimaryButton}" Click="Telegram_Click"/>
                                         <Button Content="mxmvdev.ru  ↗" Margin="10,0,0,0" Style="{StaticResource GhostButton}" Click="Website_Click"/>
                                     </StackPanel>
-                                    <TextBlock Text="Версия 1.1.0  •  Сделано для Windows" Foreground="#596176" FontSize="10" Margin="0,24,0,0"/>
+                                    <TextBlock Text="Версия 1.2.0  •  Сделано для Windows" Foreground="#596176" FontSize="10" Margin="0,24,0,0"/>
                                 </StackPanel>
                             </Border>
                         </Grid>

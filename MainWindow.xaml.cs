@@ -67,9 +67,9 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
-        // Ten lightweight vector updates per second look continuous for a
-        // countdown arc while keeping layered-window redraws inexpensive.
-        _timer.Interval = TimeSpan.FromMilliseconds(100);
+        // Five decorative frames per second are enough for slow HUD motion.
+        // The countdown itself uses an absolute UTC deadline and stays exact.
+        _timer.Interval = TimeSpan.FromMilliseconds(200);
         _timer.Tick += Timer_Tick;
         Loaded += MainWindow_Loaded;
         NotesList.ItemsSource = _data.Notes;
@@ -241,7 +241,10 @@ public partial class MainWindow : Window
         SaveData();
 
         if (SoundCheck.IsChecked == true)
-            _ = Task.Run(PlayGentleChime);
+        {
+            var soundTheme = GetSelectedTag(SoundThemeCombo, "Aurora");
+            _ = Task.Run(() => PlayGentleChime(soundTheme));
+        }
         if (BreakOverlayCheck.IsChecked == true && !_isOverlay)
             ToggleOverlay();
 
@@ -281,8 +284,33 @@ public partial class MainWindow : Window
         var progress = _total.TotalSeconds <= 0
             ? 0
             : Math.Clamp(_remaining.TotalSeconds / _total.TotalSeconds, 0, 1);
-        CountdownRing.Progress = progress;
-        OverlayRing.Progress = progress;
+        var phase = (DateTime.UtcNow - DateTime.UnixEpoch).TotalSeconds % 3600;
+        UpdateTimerFaceVisual(CountdownRing, progress, phase);
+        UpdateTimerFaceVisual(OverlayRing, progress, phase);
+    }
+
+    private static void UpdateTimerFaceVisual(TimerRing ring, double progress, double phase)
+    {
+        switch (ring.Face)
+        {
+            case TimerFaceStyle.SegmentedHalo:
+                ring.Progress = Math.Ceiling(progress * 48) / 48;
+                break;
+            case TimerFaceStyle.ChronoDots:
+                ring.Progress = Math.Ceiling(progress * 60) / 60;
+                break;
+            case TimerFaceStyle.HexCore:
+                ring.Progress = Math.Ceiling(progress * 6) / 6;
+                break;
+            case TimerFaceStyle.NeonArc:
+            case TimerFaceStyle.Minimal:
+                ring.Progress = progress;
+                break;
+            default:
+                ring.Progress = progress;
+                ring.Phase = phase;
+                break;
+        }
     }
 
     private void FlashOverlay()
@@ -426,6 +454,24 @@ public partial class MainWindow : Window
         SaveData();
     }
 
+    private void TimerFaceCombo_Changed(object sender, SelectionChangedEventArgs e)
+    {
+        if (!_isLoaded)
+            return;
+        ApplyTimerFace();
+        SaveData();
+    }
+
+    private void ApplyTimerFace()
+    {
+        var faceName = GetSelectedTag(TimerFaceCombo, "NeonArc");
+        if (!Enum.TryParse<TimerFaceStyle>(faceName, out var face))
+            face = TimerFaceStyle.NeonArc;
+        CountdownRing.Face = face;
+        OverlayRing.Face = face;
+        UpdateRingProgress();
+    }
+
     private void OverlayScaleSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
     {
         if (OverlayScaleValueText is not null)
@@ -501,6 +547,18 @@ public partial class MainWindow : Window
             AutoStartCheck.IsChecked = false;
         }
         SaveData();
+    }
+
+    private void SoundThemeCombo_Changed(object sender, SelectionChangedEventArgs e)
+    {
+        if (_isLoaded)
+            SaveData();
+    }
+
+    private void PreviewSound_Click(object sender, RoutedEventArgs e)
+    {
+        var soundTheme = GetSelectedTag(SoundThemeCombo, "Aurora");
+        _ = Task.Run(() => PlayGentleChime(soundTheme));
     }
 
     private void AddNote_Click(object sender, RoutedEventArgs e)
@@ -643,11 +701,14 @@ public partial class MainWindow : Window
         TopmostCheck.IsChecked = _data.AlwaysOnTop;
         ClickThroughCheck.IsChecked = _data.OverlayClickThrough;
         SoundCheck.IsChecked = _data.SoundEnabled;
+        SelectComboByTag(SoundThemeCombo, _data.SoundTheme);
         BreakOverlayCheck.IsChecked = _data.BreakOverlay;
         AutoStartCheck.IsChecked = _data.AutoStart;
         SelectComboByTag(OverlaySizeCombo, _data.OverlaySize);
         SelectComboByTag(OverlayAnimationCombo, _data.OverlayAnimation);
+        SelectComboByTag(TimerFaceCombo, _data.TimerFace);
         OverlayScaleSlider.Value = Math.Clamp(_data.OverlayScalePercent, 70, 180);
+        ApplyTimerFace();
         Topmost = _data.AlwaysOnTop;
         RefreshNotesCount();
         RefreshStats();
@@ -679,10 +740,12 @@ public partial class MainWindow : Window
             _data.AlwaysOnTop = TopmostCheck.IsChecked == true;
             _data.OverlayClickThrough = ClickThroughCheck.IsChecked == true;
             _data.SoundEnabled = SoundCheck.IsChecked == true;
+            _data.SoundTheme = GetSelectedTag(SoundThemeCombo, "Aurora");
             _data.BreakOverlay = BreakOverlayCheck.IsChecked == true;
             _data.AutoStart = AutoStartCheck.IsChecked == true;
             _data.OverlaySize = GetSelectedTag(OverlaySizeCombo, "Compact");
             _data.OverlayAnimation = GetSelectedTag(OverlayAnimationCombo, "Aurora");
+            _data.TimerFace = GetSelectedTag(TimerFaceCombo, "NeonArc");
             _data.OverlayScalePercent = OverlayScaleSlider.Value;
             Directory.CreateDirectory(Path.GetDirectoryName(_dataPath)!);
             File.WriteAllText(_dataPath, JsonSerializer.Serialize(_data,
@@ -691,11 +754,11 @@ public partial class MainWindow : Window
         catch { }
     }
 
-    private static void PlayGentleChime()
+    private static void PlayGentleChime(string soundTheme)
     {
         try
         {
-            using var stream = CreateChimeWav();
+            using var stream = CreateChimeWav(soundTheme);
             using var player = new SoundPlayer(stream);
             player.PlaySync();
         }
@@ -705,28 +768,42 @@ public partial class MainWindow : Window
         }
     }
 
-    private static MemoryStream CreateChimeWav()
+    private static MemoryStream CreateChimeWav(string soundTheme)
     {
         const int sampleRate = 44100;
         const short channels = 1;
         const short bits = 16;
-        var notes = new[] { (523.25, .22), (659.25, .22), (783.99, .42) };
+        var notes = GetSoundNotes(soundTheme);
         var samples = new List<short>();
 
-        foreach (var (frequency, duration) in notes)
+        foreach (var tone in notes)
         {
-            var count = (int)(sampleRate * duration);
+            var count = (int)(sampleRate * tone.Duration);
+            var phase = 0d;
             for (var i = 0; i < count; i++)
             {
                 var t = (double)i / sampleRate;
-                var attack = Math.Min(1, i / (sampleRate * .018));
-                var release = Math.Min(1, (count - i) / (sampleRate * .16));
-                var envelope = Math.Min(attack, release);
-                var wave = Math.Sin(2 * Math.PI * frequency * t) * .55
-                         + Math.Sin(2 * Math.PI * frequency * 2 * t) * .12;
-                samples.Add((short)(wave * envelope * short.MaxValue * .34));
+                var amount = i / (double)Math.Max(1, count - 1);
+                var frequency = tone.StartFrequency + (tone.EndFrequency - tone.StartFrequency) * amount;
+                phase += 2 * Math.PI * frequency / sampleRate;
+                var attack = Math.Min(1, i / (sampleRate * .025));
+                var release = Math.Min(1, (count - i) / (sampleRate * Math.Min(.22, tone.Duration * .55)));
+                var envelope = attack * Math.Pow(Math.Max(0, release), 1.35);
+                if (tone.Timbre == 4)
+                    envelope *= Math.Exp(-2.2 * t / tone.Duration);
+
+                var wave = tone.Timbre switch
+                {
+                    1 => Math.Sin(phase) * .72 + Math.Sin(phase * 2.01) * .20 + Math.Sin(phase * 3.98) * .08,
+                    2 => Math.Sin(phase) * .78 + Math.Sin(phase * 3) / 9 + Math.Sin(phase * 5) / 25,
+                    3 => Math.Sin(phase + .34 * Math.Sin(phase * 2.03)) * .82 + Math.Sin(phase * .5) * .08,
+                    4 => Math.Sin(phase) * .63 + Math.Sin(phase * 2.76) * .21 + Math.Sin(phase * 4.07) * .10,
+                    _ => Math.Sin(phase) * .82 + Math.Sin(phase * 2) * .10
+                };
+                var value = Math.Clamp(wave * envelope * tone.Volume, -1, 1);
+                samples.Add((short)(value * short.MaxValue));
             }
-            samples.AddRange(Enumerable.Repeat((short)0, (int)(sampleRate * .055)));
+            samples.AddRange(Enumerable.Repeat((short)0, (int)(sampleRate * tone.Gap)));
         }
 
         var stream = new MemoryStream();
@@ -752,6 +829,77 @@ public partial class MainWindow : Window
         stream.Position = 0;
         return stream;
     }
+
+    private static Tone[] GetSoundNotes(string soundTheme) => soundTheme switch
+    {
+        "Crystal" =>
+        [
+            new(1046.50, 1046.50, .18, .07, .25, 1),
+            new(1318.51, 1318.51, .22, .06, .24, 1),
+            new(1567.98, 1567.98, .42, 0, .22, 1)
+        ],
+        "Zen" =>
+        [
+            new(392.00, 392.00, .48, .10, .25, 4),
+            new(587.33, 587.33, .72, 0, .22, 4)
+        ],
+        "SoftArcade" =>
+        [
+            new(440.00, 440.00, .10, .035, .22, 2),
+            new(554.37, 554.37, .10, .035, .22, 2),
+            new(659.25, 659.25, .10, .035, .21, 2),
+            new(880.00, 880.00, .30, 0, .20, 2)
+        ],
+        "Cosmic" =>
+        [
+            new(220.00, 440.00, .45, .07, .23, 3),
+            new(659.25, 987.77, .52, 0, .21, 3)
+        ],
+        "WaterDrop" =>
+        [
+            new(1450.00, 760.00, .18, .12, .20, 0),
+            new(1260.00, 690.00, .20, .12, .19, 0),
+            new(1640.00, 920.00, .24, 0, .18, 1)
+        ],
+        "TempleBell" =>
+        [
+            new(783.99, 783.99, .72, .10, .25, 4),
+            new(1174.66, 1174.66, .88, 0, .19, 4)
+        ],
+        "FocusComplete" =>
+        [
+            new(523.25, 523.25, .16, .05, .23, 0),
+            new(587.33, 587.33, .16, .05, .23, 0),
+            new(783.99, 783.99, .46, 0, .22, 1)
+        ],
+        "SoftPulse" =>
+        [
+            new(329.63, 329.63, .20, .10, .24, 0),
+            new(329.63, 329.63, .20, .10, .22, 0),
+            new(493.88, 493.88, .42, 0, .20, 3)
+        ],
+        "CalmVictory" =>
+        [
+            new(523.25, 523.25, .13, .035, .21, 0),
+            new(659.25, 659.25, .13, .035, .21, 0),
+            new(783.99, 783.99, .13, .035, .20, 0),
+            new(1046.50, 1046.50, .55, 0, .20, 1)
+        ],
+        _ =>
+        [
+            new(523.25, 523.25, .22, .055, .23, 0),
+            new(659.25, 659.25, .22, .055, .22, 0),
+            new(783.99, 783.99, .42, 0, .21, 1)
+        ]
+    };
+
+    private readonly record struct Tone(
+        double StartFrequency,
+        double EndFrequency,
+        double Duration,
+        double Gap,
+        double Volume,
+        int Timbre);
 
     private void Window_Closing(object? sender, CancelEventArgs e)
     {
@@ -824,8 +972,10 @@ public sealed class AppData
     public bool OverlayClickThrough { get; set; }
     public string OverlaySize { get; set; } = "Compact";
     public string OverlayAnimation { get; set; } = "Aurora";
+    public string TimerFace { get; set; } = "NeonArc";
     public double OverlayScalePercent { get; set; } = 100;
     public bool SoundEnabled { get; set; } = true;
+    public string SoundTheme { get; set; } = "Aurora";
     public bool BreakOverlay { get; set; } = true;
     public bool AutoStart { get; set; }
 }

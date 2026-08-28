@@ -42,7 +42,7 @@ public sealed class OverlayMotionSurface : FrameworkElement
 
     private readonly DispatcherTimer _frameTimer = new(DispatcherPriority.Background)
     {
-        Interval = TimeSpan.FromMilliseconds(100)
+        Interval = TimeSpan.FromMilliseconds(150)
     };
     private DateTime _startedAtUtc;
     private double _phase;
