@@ -1,0 +1,350 @@
+﻿<Window x:Class="GamerMX.Tool.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="GamerMX Tool" Height="780" Width="1180" MinHeight="680" MinWidth="1040"
+        WindowStyle="None" AllowsTransparency="True" Background="Transparent"
+        ResizeMode="CanResizeWithGrip" UseLayoutRounding="True"
+        SourceInitialized="Window_SourceInitialized" Closing="Window_Closing">
+    <Grid x:Name="RootGrid" Opacity="1">
+        <Border x:Name="WindowChrome" Margin="12" CornerRadius="26" BorderThickness="1"
+                BorderBrush="#33FFFFFF" Background="#F20A0C14">
+            <Border.Effect>
+                <DropShadowEffect BlurRadius="35" ShadowDepth="8" Opacity=".5" Color="#000000"/>
+            </Border.Effect>
+            <Grid ClipToBounds="True">
+                <Grid.Background>
+                    <RadialGradientBrush Center=".8,.12" GradientOrigin=".8,.12" RadiusX=".8" RadiusY=".8">
+                        <GradientStop Color="#392B145D" Offset="0"/>
+                        <GradientStop Color="#10151C2E" Offset=".45"/>
+                        <GradientStop Color="#F30A0C14" Offset="1"/>
+                    </RadialGradientBrush>
+                </Grid.Background>
+
+                <Ellipse Width="520" Height="520" Fill="#168B5CF6" HorizontalAlignment="Right"
+                         VerticalAlignment="Top" Margin="0,-310,-170,0" IsHitTestVisible="False">
+                    <Ellipse.Effect><BlurEffect Radius="95"/></Ellipse.Effect>
+                </Ellipse>
+
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="226"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="62"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <!-- Custom title bar -->
+                    <Border Grid.ColumnSpan="2" Background="#33090B12" MouseLeftButtonDown="TitleBar_MouseLeftButtonDown">
+                        <Grid Margin="22,0,14,0">
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                <Border Width="30" Height="30" CornerRadius="9" Background="#278B5CF6">
+                                    <TextBlock Text="GX" Foreground="#C4B5FD" FontSize="12" FontWeight="Bold"
+                                               HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                </Border>
+                                <StackPanel Margin="10,0,0,0" VerticalAlignment="Center">
+                                    <TextBlock Text="GamerMX Tool" FontSize="14" FontWeight="SemiBold"/>
+                                    <TextBlock Text="H E A L T H  O V E R L A Y" FontSize="8" Foreground="#797F96"/>
+                                </StackPanel>
+                            </StackPanel>
+                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                                <Button Content="—" Width="42" Height="38" Style="{StaticResource NavButton}"
+                                        HorizontalContentAlignment="Center" Click="Minimize_Click"/>
+                                <Button Content="□" Width="42" Height="38" Style="{StaticResource NavButton}"
+                                        HorizontalContentAlignment="Center" Click="Maximize_Click"/>
+                                <Button Content="×" Width="42" Height="38" Style="{StaticResource NavButton}"
+                                        HorizontalContentAlignment="Center" Click="Close_Click"/>
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+
+                    <!-- Sidebar -->
+                    <Border Grid.Row="1" Background="#1DFFFFFF" BorderBrush="#18FFFFFF" BorderThickness="0,1,1,0">
+                        <Grid Margin="14,18,14,16">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="*"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+                            <StackPanel>
+                                <TextBlock Text="РАБОЧАЯ ЗОНА" Margin="14,0,0,9" FontSize="9"
+                                           Foreground="#626A82" FontWeight="SemiBold"/>
+                                <Button x:Name="TimerNav" Tag="Active" Content="◷   Таймер" Style="{StaticResource NavButton}" Click="TimerNav_Click"/>
+                                <Button x:Name="NotesNav" Content="✎   Заметки" Style="{StaticResource NavButton}" Click="NotesNav_Click"/>
+                                <Button x:Name="StatsNav" Content="▥   Статистика" Style="{StaticResource NavButton}" Click="StatsNav_Click"/>
+                                <TextBlock Text="СИСТЕМА" Margin="14,22,0,9" FontSize="9"
+                                           Foreground="#626A82" FontWeight="SemiBold"/>
+                                <Button x:Name="SettingsNav" Content="⚙   Настройки" Style="{StaticResource NavButton}" Click="SettingsNav_Click"/>
+                                <Button x:Name="AboutNav" Content="◉   О разработчике" Style="{StaticResource NavButton}" Click="AboutNav_Click"/>
+                            </StackPanel>
+                            <Border Grid.Row="2" Background="#158B5CF6" CornerRadius="16" Padding="14">
+                                <StackPanel>
+                                    <TextBlock Text="Быстрый оверлей" FontSize="12" FontWeight="SemiBold"/>
+                                    <TextBlock Text="Ctrl + Shift + G" Margin="0,4,0,10" FontSize="11" Foreground="#A78BFA"/>
+                                    <Button x:Name="OverlayButton" Content="Включить" Height="36"
+                                            Style="{StaticResource GhostButton}" Click="OverlayButton_Click"/>
+                                </StackPanel>
+                            </Border>
+                        </Grid>
+                    </Border>
+
+                    <!-- Main content -->
+                    <Grid Grid.Column="1" Grid.Row="1" Margin="28,22,28,26">
+                        <!-- Timer page -->
+                        <Grid x:Name="TimerPage">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="*"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+                            <Grid>
+                                <StackPanel>
+                                    <TextBlock Text="Время позаботиться о себе" FontSize="26" FontWeight="SemiBold"/>
+                                    <TextBlock Text="Не теряй фокус — короткая пауза возвращает реакцию и энергию."
+                                               Margin="0,6,0,0" FontSize="13" Foreground="{StaticResource TextSecondary}"/>
+                                </StackPanel>
+                                <Border HorizontalAlignment="Right" VerticalAlignment="Top" CornerRadius="12"
+                                        Padding="12,7" Background="#162DD4BF" BorderBrush="#382DD4BF" BorderThickness="1">
+                                    <TextBlock x:Name="StatusBadge" Text="●  ГОТОВ" Foreground="#5EEAD4" FontSize="10" FontWeight="SemiBold"/>
+                                </Border>
+                            </Grid>
+
+                            <Grid Grid.Row="1" Margin="0,20,0,16">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="1.5*"/>
+                                    <ColumnDefinition Width="1*"/>
+                                </Grid.ColumnDefinitions>
+                                <Border Style="{StaticResource GlassCard}" Margin="0,0,14,0">
+                                    <Grid>
+                                        <Ellipse Width="310" Height="310" Fill="#0BFFFFFF" Stroke="#18FFFFFF" StrokeThickness="1"/>
+                                        <Ellipse x:Name="PulseRing" Width="276" Height="276" Stroke="#338B5CF6" StrokeThickness="15">
+                                            <Ellipse.Effect><BlurEffect Radius="12"/></Ellipse.Effect>
+                                        </Ellipse>
+                                        <Ellipse Width="276" Height="276" Stroke="#6D8B5CF6" StrokeThickness="5"
+                                                 StrokeDashArray="1.5,1.5" RenderTransformOrigin=".5,.5">
+                                            <Ellipse.RenderTransform><RotateTransform Angle="-90"/></Ellipse.RenderTransform>
+                                        </Ellipse>
+                                        <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                                            <TextBlock x:Name="TimerLabel" Text="С Л Е Д У Ю Щ А Я   П А У З А" FontSize="10"
+                                                       Foreground="#7C849D" HorizontalAlignment="Center"/>
+                                            <TextBlock x:Name="TimerText" Text="25:00" Margin="0,6,0,0" FontSize="64"
+                                                       FontWeight="Light" HorizontalAlignment="Center"/>
+                                            <TextBlock x:Name="ExerciseText" Text="Разминка всего тела" Margin="0,4,0,0"
+                                                       Foreground="#B7BED1" FontSize="13" HorizontalAlignment="Center"/>
+                                        </StackPanel>
+                                        <ProgressBar x:Name="TimerProgress" Height="4" VerticalAlignment="Bottom" Margin="35,0,35,8"
+                                                     Minimum="0" Maximum="100" Value="0" Foreground="{StaticResource Accent}"
+                                                     Background="#18FFFFFF" BorderThickness="0"/>
+                                    </Grid>
+                                </Border>
+
+                                <StackPanel Grid.Column="1" Margin="14,0,0,0">
+                                    <Border Style="{StaticResource GlassCard}" Margin="0,0,0,12">
+                                        <StackPanel>
+                                            <TextBlock Text="Свой интервал" FontSize="15" FontWeight="SemiBold"/>
+                                            <TextBlock Text="Часы    Минуты   Секунды" Margin="2,14,0,6" FontSize="10" Foreground="#737B94"/>
+                                            <StackPanel Orientation="Horizontal">
+                                                <TextBox x:Name="HoursBox" Text="0" Width="72" TextAlignment="Center" MaxLength="2"/>
+                                                <TextBlock Text=":" VerticalAlignment="Center" Margin="7,0" Foreground="#5E667D"/>
+                                                <TextBox x:Name="MinutesBox" Text="25" Width="72" TextAlignment="Center" MaxLength="2"/>
+                                                <TextBlock Text=":" VerticalAlignment="Center" Margin="7,0" Foreground="#5E667D"/>
+                                                <TextBox x:Name="SecondsBox" Text="0" Width="72" TextAlignment="Center" MaxLength="2"/>
+                                            </StackPanel>
+                                            <StackPanel Orientation="Horizontal" Margin="0,16,0,0">
+                                                <Button x:Name="StartButton" Content="Старт" Style="{StaticResource PrimaryButton}"
+                                                        Width="130" Click="StartButton_Click"/>
+                                                <Button x:Name="ResetButton" Content="Сброс" Style="{StaticResource GhostButton}"
+                                                        Width="100" Margin="10,0,0,0" Click="ResetButton_Click"/>
+                                            </StackPanel>
+                                        </StackPanel>
+                                    </Border>
+                                    <Border Style="{StaticResource GlassCard}">
+                                        <StackPanel>
+                                            <TextBlock Text="Быстрые шаблоны" FontSize="15" FontWeight="SemiBold"/>
+                                            <UniformGrid Columns="2" Margin="0,12,0,0">
+                                                <Button Tag="1200" Content="👁  20 мин&#x0a;Глаза" Margin="0,0,6,7" Height="58" Style="{StaticResource GhostButton}" Click="Preset_Click"/>
+                                                <Button Tag="2700" Content="🧍  45 мин&#x0a;Разминка" Margin="6,0,0,7" Height="58" Style="{StaticResource GhostButton}" Click="Preset_Click"/>
+                                                <Button Tag="3600" Content="💧  60 мин&#x0a;Вода" Margin="0,7,6,0" Height="58" Style="{StaticResource GhostButton}" Click="Preset_Click"/>
+                                                <Button Tag="5400" Content="🚶  90 мин&#x0a;Прогулка" Margin="6,7,0,0" Height="58" Style="{StaticResource GhostButton}" Click="Preset_Click"/>
+                                            </UniformGrid>
+                                        </StackPanel>
+                                    </Border>
+                                </StackPanel>
+                            </Grid>
+
+                            <Border Grid.Row="2" Background="#0FFFFFFF" BorderBrush="#18FFFFFF" BorderThickness="1"
+                                    CornerRadius="16" Padding="16,12">
+                                <Grid>
+                                    <TextBlock x:Name="TipText" Text="💡  Правило 20–20–20: каждые 20 минут смотри 20 секунд на объект в 6 метрах."
+                                               FontSize="12" Foreground="#B0B7CB" VerticalAlignment="Center"/>
+                                    <Button Content="Другой совет" HorizontalAlignment="Right" Height="34" Padding="14,0"
+                                            Style="{StaticResource GhostButton}" Click="NewTip_Click"/>
+                                </Grid>
+                            </Border>
+                        </Grid>
+
+                        <!-- Notes page -->
+                        <Grid x:Name="NotesPage" Visibility="Collapsed">
+                            <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
+                            <StackPanel>
+                                <TextBlock Text="Заметки" FontSize="26" FontWeight="SemiBold"/>
+                                <TextBlock Text="Запиши мысль, задачу или настройку — всё хранится только на этом ПК."
+                                           Margin="0,6,0,0" Foreground="{StaticResource TextSecondary}"/>
+                            </StackPanel>
+                            <Grid Grid.Row="1" Margin="0,24,0,0">
+                                <Grid.ColumnDefinitions><ColumnDefinition Width="1.05*"/><ColumnDefinition Width="1.5*"/></Grid.ColumnDefinitions>
+                                <Border Style="{StaticResource GlassCard}" Margin="0,0,12,0">
+                                    <StackPanel>
+                                        <TextBlock Text="Новая заметка" FontSize="16" FontWeight="SemiBold"/>
+                                        <TextBox x:Name="NoteTitleBox" Margin="0,16,0,10" Text="Заголовок"/>
+                                        <TextBox x:Name="NoteBodyBox" Height="220" TextWrapping="Wrap" AcceptsReturn="True"
+                                                 VerticalScrollBarVisibility="Auto" Text="Что важно не забыть?"/>
+                                        <Button Content="+  Сохранить заметку" Margin="0,14,0,0" Style="{StaticResource PrimaryButton}" Click="AddNote_Click"/>
+                                    </StackPanel>
+                                </Border>
+                                <Border Grid.Column="1" Style="{StaticResource GlassCard}" Margin="12,0,0,0">
+                                    <Grid>
+                                        <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
+                                        <Grid>
+                                            <TextBlock Text="Сохранённые" FontSize="16" FontWeight="SemiBold"/>
+                                            <TextBlock x:Name="NotesCountText" Text="0 заметок" HorizontalAlignment="Right" Foreground="#7E879F"/>
+                                        </Grid>
+                                        <ListBox x:Name="NotesList" Grid.Row="1" Margin="0,14,0,0" Background="Transparent"
+                                                 BorderThickness="0" Foreground="White">
+                                            <ListBox.ItemTemplate>
+                                                <DataTemplate>
+                                                    <Border Background="#12FFFFFF" BorderBrush="#18FFFFFF" BorderThickness="1"
+                                                            CornerRadius="14" Padding="15" Margin="0,0,0,9">
+                                                        <Grid Width="390">
+                                                            <StackPanel>
+                                                                <TextBlock Text="{Binding Title}" FontWeight="SemiBold" FontSize="14"/>
+                                                                <TextBlock Text="{Binding Body}" Margin="0,5,0,0" Foreground="#9FA7BA"
+                                                                           TextWrapping="Wrap" MaxHeight="42"/>
+                                                                <TextBlock Text="{Binding Created}" Margin="0,8,0,0" Foreground="#656D83" FontSize="10"/>
+                                                            </StackPanel>
+                                                            <Button Content="×" Tag="{Binding Id}" HorizontalAlignment="Right" VerticalAlignment="Top"
+                                                                    Width="30" Height="30" Padding="0" Style="{StaticResource GhostButton}"
+                                                                    Click="DeleteNote_Click"/>
+                                                        </Grid>
+                                                    </Border>
+                                                </DataTemplate>
+                                            </ListBox.ItemTemplate>
+                                        </ListBox>
+                                    </Grid>
+                                </Border>
+                            </Grid>
+                        </Grid>
+
+                        <!-- Statistics page -->
+                        <Grid x:Name="StatsPage" Visibility="Collapsed">
+                            <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
+                            <StackPanel>
+                                <TextBlock Text="Статистика здоровья" FontSize="26" FontWeight="SemiBold"/>
+                                <TextBlock Text="Небольшой прогресс каждый день важнее идеального режима." Margin="0,6,0,0" Foreground="{StaticResource TextSecondary}"/>
+                            </StackPanel>
+                            <UniformGrid Grid.Row="1" Columns="3" Margin="0,24,0,18">
+                                <Border Style="{StaticResource GlassCard}" Margin="0,0,10,0"><StackPanel><TextBlock Text="ПАУЗ СЕГОДНЯ" Foreground="#737B94" FontSize="10"/><TextBlock x:Name="TodayBreaksText" Text="0" FontSize="38" Margin="0,8,0,0"/><TextBlock Text="цель: 8" Foreground="#5EEAD4" FontSize="11"/></StackPanel></Border>
+                                <Border Style="{StaticResource GlassCard}" Margin="5,0"><StackPanel><TextBlock Text="В ФОКУСЕ" Foreground="#737B94" FontSize="10"/><TextBlock x:Name="FocusTimeText" Text="0 мин" FontSize="38" Margin="0,8,0,0"/><TextBlock Text="за эту сессию" Foreground="#A78BFA" FontSize="11"/></StackPanel></Border>
+                                <Border Style="{StaticResource GlassCard}" Margin="10,0,0,0"><StackPanel><TextBlock Text="СЕРИЯ" Foreground="#737B94" FontSize="10"/><TextBlock x:Name="StreakText" Text="1 день" FontSize="38" Margin="0,8,0,0"/><TextBlock Text="продолжай!" Foreground="#F9A8D4" FontSize="11"/></StackPanel></Border>
+                            </UniformGrid>
+                            <Border Grid.Row="2" Style="{StaticResource GlassCard}">
+                                <StackPanel>
+                                    <TextBlock Text="Сегодняшний ритм" FontSize="16" FontWeight="SemiBold"/>
+                                    <TextBlock Text="Завершённые паузы появятся здесь" Margin="0,8,0,18" Foreground="#7E879F"/>
+                                    <ItemsControl x:Name="SessionHistoryList"/>
+                                </StackPanel>
+                            </Border>
+                        </Grid>
+
+                        <!-- Settings page -->
+                        <Grid x:Name="SettingsPage" Visibility="Collapsed">
+                            <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
+                            <StackPanel>
+                                <TextBlock Text="Настройки" FontSize="26" FontWeight="SemiBold"/>
+                                <TextBlock Text="Настрой GamerMX Tool под свой второй монитор и стиль игры."
+                                           Margin="0,6,0,0" Foreground="{StaticResource TextSecondary}"/>
+                            </StackPanel>
+                            <ScrollViewer Grid.Row="1" Margin="0,24,0,0" VerticalScrollBarVisibility="Auto">
+                                <StackPanel>
+                                    <Border Style="{StaticResource GlassCard}" Margin="0,0,0,14">
+                                        <StackPanel>
+                                            <TextBlock Text="Окно и оверлей" FontSize="16" FontWeight="SemiBold"/>
+                                            <CheckBox x:Name="TopmostCheck" Content="Всегда поверх остальных окон" Margin="0,18,0,0" IsChecked="True" Checked="TopmostCheck_Changed" Unchecked="TopmostCheck_Changed"/>
+                                            <CheckBox x:Name="ClickThroughCheck" Content="Пропускать клики сквозь оверлей" Margin="0,14,0,0" Checked="ClickThroughCheck_Changed" Unchecked="ClickThroughCheck_Changed"/>
+                                            <TextBlock Text="Прозрачность всего приложения" Margin="0,20,0,7" Foreground="#A8AFC1"/>
+                                            <Slider x:Name="OpacitySlider" Minimum="25" Maximum="100" Value="96" TickFrequency="5"
+                                                    ValueChanged="OpacitySlider_ValueChanged"/>
+                                            <Grid Margin="0,4,0,0">
+                                                <TextBlock Text="25%" Foreground="#656D83" FontSize="10"/>
+                                                <TextBlock x:Name="OpacityValueText" Text="96%" HorizontalAlignment="Center" Foreground="#A78BFA" FontSize="10"/>
+                                                <TextBlock Text="100%" HorizontalAlignment="Right" Foreground="#656D83" FontSize="10"/>
+                                            </Grid>
+                                        </StackPanel>
+                                    </Border>
+                                    <Border Style="{StaticResource GlassCard}">
+                                        <StackPanel>
+                                            <TextBlock Text="Поведение" FontSize="16" FontWeight="SemiBold"/>
+                                            <CheckBox x:Name="SoundCheck" Content="Приятный звуковой сигнал" Margin="0,18,0,0" IsChecked="True"/>
+                                            <CheckBox x:Name="AutoStartCheck" Content="Запускать вместе с Windows" Margin="0,14,0,0" Checked="AutoStartCheck_Changed" Unchecked="AutoStartCheck_Changed"/>
+                                            <CheckBox x:Name="BreakOverlayCheck" Content="Показывать компактный оверлей во время паузы" Margin="0,14,0,0" IsChecked="True"/>
+                                            <TextBlock Text="Горячая клавиша Ctrl + Shift + G возвращает управление, даже когда включён режим «сквозь клики»."
+                                                       Margin="0,18,0,0" Foreground="#7E879F" TextWrapping="Wrap"/>
+                                        </StackPanel>
+                                    </Border>
+                                </StackPanel>
+                            </ScrollViewer>
+                        </Grid>
+
+                        <!-- About page -->
+                        <Grid x:Name="AboutPage" Visibility="Collapsed">
+                            <Border Style="{StaticResource GlassCard}" Width="570" HorizontalAlignment="Center" VerticalAlignment="Center" Padding="38">
+                                <StackPanel HorizontalAlignment="Center">
+                                    <Border Width="92" Height="92" CornerRadius="28" Background="#258B5CF6">
+                                        <TextBlock Text="GX" Foreground="#C4B5FD" FontSize="30" FontWeight="Bold"
+                                                   HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                    </Border>
+                                    <TextBlock Text="GamerMX Tool" FontSize="30" FontWeight="SemiBold" Margin="0,22,0,0"/>
+                                    <TextBlock Text="H E A L T H   C O M P A N I O N   F O R   G A M E R S" Foreground="#8B93AA" FontSize="10"
+                                               Margin="0,6,0,0"/>
+                                    <TextBlock Text="Таймер заботы о здоровье, заметки и ненавязчивый оверлей для долгих игровых и рабочих сессий."
+                                               TextAlignment="Center" TextWrapping="Wrap" Foreground="#A8AFC1" Margin="0,22,0,0" MaxWidth="430"/>
+                                    <Border Height="1" Background="#18FFFFFF" Margin="0,26"/>
+                                    <TextBlock Text="Разработчик" Foreground="#737B94" FontSize="11"/>
+                                    <TextBlock Text="Максимов Д.А." FontSize="18" FontWeight="SemiBold" Margin="0,5,0,0"/>
+                                    <StackPanel Orientation="Horizontal" Margin="0,22,0,0" HorizontalAlignment="Center">
+                                        <Button Content="Telegram  @dmitrymx" Style="{StaticResource PrimaryButton}" Click="Telegram_Click"/>
+                                        <Button Content="mxmvdev.ru  ↗" Margin="10,0,0,0" Style="{StaticResource GhostButton}" Click="Website_Click"/>
+                                    </StackPanel>
+                                    <TextBlock Text="Версия 1.0.0  •  Сделано для Windows" Foreground="#596176" FontSize="10" Margin="0,24,0,0"/>
+                                </StackPanel>
+                            </Border>
+                        </Grid>
+                    </Grid>
+                </Grid>
+            </Grid>
+        </Border>
+
+        <!-- Compact overlay -->
+        <Border x:Name="CompactOverlay" Visibility="Collapsed" Width="390" Height="138" CornerRadius="24"
+                Background="#E90C0F1A" BorderBrush="#4D8B5CF6" BorderThickness="1.2"
+                HorizontalAlignment="Center" VerticalAlignment="Center" MouseLeftButtonDown="TitleBar_MouseLeftButtonDown">
+            <Border.Effect><DropShadowEffect BlurRadius="32" ShadowDepth="6" Opacity=".55"/></Border.Effect>
+            <Grid Margin="18">
+                <Grid.ColumnDefinitions><ColumnDefinition Width="86"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                <Border Width="72" Height="72" CornerRadius="36" Background="#208B5CF6" VerticalAlignment="Center">
+                    <TextBlock Text="◷" FontSize="30" Foreground="#C4B5FD" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                </Border>
+                <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="4,0,12,0">
+                    <TextBlock Text="Д О   П А У З Ы" FontSize="9" Foreground="#777F97"/>
+                    <TextBlock x:Name="OverlayTimerText" Text="25:00" FontSize="32" FontWeight="Light"/>
+                    <TextBlock x:Name="OverlayExerciseText" Text="Разминка всего тела" FontSize="11" Foreground="#A2AABD"/>
+                </StackPanel>
+                <StackPanel Grid.Column="2" VerticalAlignment="Center">
+                    <Button Content="↗" Width="42" Height="38" Padding="0" Style="{StaticResource GhostButton}" Click="OverlayButton_Click"/>
+                    <Button Content="×" Width="42" Height="38" Padding="0" Margin="0,7,0,0" Style="{StaticResource GhostButton}" Click="Close_Click"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+    </Grid>
+</Window>

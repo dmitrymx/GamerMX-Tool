@@ -1,0 +1,11 @@
+bin/
+obj/
+dist/
+.vs/
+.vscode/
+*.user
+*.suo
+*.pdb
+*.log
+.env
+.env.*
